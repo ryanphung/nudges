@@ -15,7 +15,16 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
-const DATA_DIR  = process.env.CLAUDE_PLUGIN_DATA || path.join(os.homedir(), '.claude', 'plugin-data', 'nudges');
+// CLI args. An optional leading `--data <dir>` overrides the plugin data dir. The hook
+// bakes this into the ack command it emits (see SELF), so done/skip/snooze write to the
+// SAME dir the hook read from. Claude Code sets CLAUDE_PLUGIN_DATA only while the hook
+// runs — NOT in the agent's shell — so the ack command can't rely on that env var.
+// Passed as an argument (not an env prefix) so it still matches a `…/nudges.js:*` rule.
+const argv = process.argv.slice(2);
+let dataArg = null;
+if (argv[0] === '--data') { dataArg = argv[1]; argv.splice(0, 2); }
+
+const DATA_DIR  = dataArg || process.env.CLAUDE_PLUGIN_DATA || path.join(os.homedir(), '.claude', 'plugin-data', 'nudges');
 const CONF      = process.env.NUDGE_CONF      || path.join(DATA_DIR, 'nudges.yaml');
 const STATE_DIR = process.env.NUDGE_STATE_DIR || path.join(DATA_DIR, 'state');
 const EXAMPLE   = path.join(__dirname, 'nudges.example.yaml');
@@ -24,7 +33,7 @@ const SNOOZE_FILE = path.join(STATE_DIR, 'nudge-snoozes');  // "<date> <id> <unt
 const IVL_FILE    = path.join(STATE_DIR, 'nudge-intervals');// "<id> <epoch>"
 
 // How the agent invokes us (shown in footers).
-const SELF = process.env.NUDGE_CMD || `node ${__filename}`;
+const SELF = process.env.NUDGE_CMD || `node ${__filename} --data ${DATA_DIR}`;
 
 // ---- time helpers (NUDGE_NOW / NUDGE_TODAY override for tests) ----
 const pad = (n) => String(n).padStart(2, '0');
@@ -179,7 +188,7 @@ function cmdSnooze(id, hhmm) {
 }
 
 // ---- dispatch ----
-const [cmd, a, b] = process.argv.slice(2);
+const [cmd, a, b] = argv;
 switch (cmd) {
   case undefined:
   case 'hook':   runHook(); break;

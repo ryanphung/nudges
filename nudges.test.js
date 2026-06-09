@@ -152,6 +152,31 @@ describe('always-active scheduled (no time)', () => {
   });
 });
 
+describe('ack/hook data-dir consistency (installed-plugin fix)', () => {
+  // Simulate an installed plugin: the hook runs WITH CLAUDE_PLUGIN_DATA set (Claude Code
+  // sets it only for the hook), but the agent's ack command does NOT have it. The fix
+  // bakes `--data <dir>` into the emitted ack command so both resolve the same state dir.
+  const fire = (env) => {
+    const o = execFileSync('node', [NJ], { encoding: 'utf8', env });
+    return o.trim() ? JSON.parse(o).hookSpecificOutput.additionalContext : '';
+  };
+  it('bakes --data into the ack command, and the ack clears the hook nudge', () => {
+    const dir = path.join(tmp, 'pdata');
+    fs.mkdirSync(dir, { recursive: true });
+    fs.copyFileSync(FIXTURE, path.join(dir, 'nudges.yaml'));
+    const base = { ...process.env, NUDGE_TODAY: TODAY };
+    delete base.NUDGE_CONF; delete base.NUDGE_STATE_DIR; delete base.CLAUDE_PLUGIN_DATA;
+    const hookEnv = { ...base, CLAUDE_PLUGIN_DATA: dir, NUDGE_NOW: '12:30' };
+
+    const ctx = fire(hookEnv);
+    assert.ok(ctx.includes('• lunch '));
+    assert.ok(ctx.includes('--data ' + dir));               // emitted command pins the dir
+    // agent runs the ack WITHOUT CLAUDE_PLUGIN_DATA, relying on the baked-in --data
+    execFileSync('node', [NJ, '--data', dir, 'done', 'lunch'], { encoding: 'utf8', env: base });
+    assert.ok(!fire(hookEnv).includes('• lunch '));         // cleared — both resolved `dir`
+  });
+});
+
 describe('edge cases & errors', () => {
   it('emits nothing and warns on a malformed config (no crash)', () => {
     const bad = path.join(tmp, 'bad.yaml');
