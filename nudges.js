@@ -73,8 +73,15 @@ function snoozeUntil(id) { const t = today(); let u = null; for (const l of read
 function intervalLast(id) { for (const l of readLines(IVL_FILE)) { const [i, e] = l.split(' '); if (i === id) return Number(e); } return null; }
 function setIntervalLast(id, epoch) { const lines = readLines(IVL_FILE).filter((l) => l.split(' ')[0] !== id); lines.push(`${id} ${epoch}`); writeLines(IVL_FILE, lines); }
 
+// Look up a nudge's config by id (used by ack to tell interval from scheduled).
+function findNudge(id) {
+  try { const c = require('js-yaml').load(fs.readFileSync(CONF, 'utf8')); return Array.isArray(c) ? (c.find((n) => n && n.id === id) || null) : null; }
+  catch { return null; }
+}
+
 // ---- rendering ----
-const actionsFor = (n) => (n.kind === 'scheduled' ? '[done/skip/snooze]' : '[snooze]');
+// All nudges accept done/skip/snooze, so the preamble states the actions once rather
+// than tagging every line. (See ackWrite for how each kind interprets done/skip.)
 const tiersOf = (n) => (n.tiers && n.tiers.length ? n.tiers : [{ time: n.time, message: n.message }]);
 
 // Latest tier whose time has passed; null if not due. Handles midnight wrap when
@@ -130,7 +137,7 @@ function runHook() {
       const last = intervalLast(n.id);
       const e = nowEpoch();
       if (last == null) { setIntervalLast(n.id, e); continue; }      // start the clock, don't fire
-      if (e - last >= every * 60) { setIntervalLast(n.id, e); fired.push({ n, body: n.message }); }
+      if (e - last >= every * 60) fired.push({ n, body: n.message }); // due — keep firing until acked (done/skip restarts the cycle)
       continue;
     }
 
@@ -146,13 +153,14 @@ function runHook() {
   if (!fired.length) return;
 
   const preamble =
-    `[NUDGES · now ${hm}] Relay each reminder below to the user. ` +
-    `Each repeats every message until handled. When they confirm they ACTUALLY did it ` +
-    `(not just say they will), clear it: ${SELF} done <id>  (also: skip <id>, snooze <id> HH:MM).`;
+    `[NUDGES · now ${hm}] The reminders below are due — source notes for you, not a script to read back. ` +
+    `Weave them into your reply in your own words, taking the tone from each message itself, rather than listing them as bullets. ` +
+    `Lead with whatever's most time-sensitive; each reappears every message until handled, so don't over-press any one. ` +
+    `When the user confirms they ACTUALLY did it (not just say they will), clear it: ${SELF} done <id>  (also: skip <id>, snooze <id> HH:MM).`;
   const firstRun = seeded === 'created'
     ? `\n(First run — your nudges config was just created at ${CONF}. Tell the user that's the file to edit to customize these reminders.)`
     : '';
-  const lines = fired.map((f) => `• ${f.n.id} ${actionsFor(f.n)}: ${f.body}`);
+  const lines = fired.map((f) => `• ${f.n.id}: ${f.body}`);
   const ctx = preamble + firstRun + '\n' + lines.join('\n');
 
   process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName: 'UserPromptSubmit', additionalContext: ctx } }) + '\n');
@@ -162,6 +170,14 @@ function runHook() {
 function ackWrite(id, status) {
   if (!id) { console.log(`usage: ${status === 'skipped' ? 'skip' : 'done'} <id>`); process.exit(1); }
   const t = today();
+  const n = findNudge(id);
+  if (n && n.kind === 'interval') {
+    // Intervals don't take a day-long ack — acknowledging just restarts the cycle:
+    // quiet for `every` minutes, then it's due again. done and skip behave the same here.
+    setIntervalLast(id, nowEpoch());
+    console.log(`marked ${status}: ${id} — quiet for ~${Number(n.every || 60)} min, then back`);
+    return;
+  }
   if (ackedToday(id)) { console.log(`already acked today: ${id} (${t})`); return; }
   fs.mkdirSync(STATE_DIR, { recursive: true });
   fs.appendFileSync(ACK_FILE, `${t} ${id} ${status}\n`);
@@ -176,6 +192,14 @@ function cmdUndo(id) {
   let changed = false;
   if (keptAcks.length !== acks.length) { writeLines(ACK_FILE, keptAcks); changed = true; }
   if (keptSn.length !== sn.length) { writeLines(SNOOZE_FILE, keptSn); changed = true; }
+  // Intervals carry no daily ack — a done/skip just reset their timer. Re-arm by making
+  // them due now (last fire = one full period ago), if they're started and in cooldown.
+  const n = findNudge(id);
+  if (n && n.kind === 'interval') {
+    const last = intervalLast(id);
+    const due = nowEpoch() - Number(n.every || 60) * 60;
+    if (last != null && last > due) { setIntervalLast(id, due); changed = true; }
+  }
   console.log(changed ? `re-armed: ${id} (${t})` : `nothing to undo: ${id} (${t})`);
 }
 function cmdSnooze(id, hhmm) {

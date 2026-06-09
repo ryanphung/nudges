@@ -1,6 +1,6 @@
 {
   "name": "nudges",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Scheduled nudges for your AI agent — time-based reminders injected into context every turn.",
   "bin": { "nudges": "./nudges.js" },
   "scripts": {

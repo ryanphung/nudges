@@ -32,7 +32,7 @@ function hook(now, day = TODAY) {
 const cmd = (...args) => run({}, args);
 const seedInterval = (id, secondsAgo) =>
   fs.writeFileSync(path.join(tmp, 'nudge-intervals'), `${id} ${Math.floor(Date.now() / 1000) - secondsAgo}\n`);
-const has = (ctx, id) => ctx.includes(`• ${id} `);
+const has = (ctx, id) => ctx.includes(`• ${id}:`);
 
 describe('scheduled timing + midnight wrap', () => {
   it('is silent when nothing is due (08:00)', () => assert.equal(hook('08:00'), ''));
@@ -103,6 +103,13 @@ describe('undo', () => {
     cmd('undo', 'pickup');
     assert.ok(has(hook('17:00'), 'pickup'));
   });
+  it('re-arms a done interval so it is due again', () => {
+    seedInterval('water', 7200);
+    cmd('done', 'water');                    // timer reset to ~now → quiet
+    assert.ok(!has(hook('10:00'), 'water'));
+    assert.match(cmd('undo', 'water'), /re-armed/);
+    assert.ok(has(hook('10:00'), 'water'));  // due again
+  });
 });
 
 describe('daily reset', () => {
@@ -126,6 +133,25 @@ describe('interval', () => {
     seedInterval('water', 60);
     assert.ok(!has(hook('10:00'), 'water'));
   });
+  it('keeps firing every message until acked (no auto-reset on fire)', () => {
+    seedInterval('water', 7200);
+    assert.ok(has(hook('10:00'), 'water'));
+    assert.ok(has(hook('10:00'), 'water')); // still due on the next message
+  });
+  it('done restarts the cycle: quiet right after, due again later', () => {
+    seedInterval('water', 7200);
+    assert.ok(has(hook('10:00'), 'water'));
+    cmd('done', 'water');
+    assert.ok(!has(hook('10:00'), 'water'));          // reset to ~now → not due
+    seedInterval('water', 7200);                       // simulate the interval elapsing again
+    assert.ok(has(hook('10:00'), 'water'));            // back
+  });
+  it('skip also restarts the cycle and writes no day-long ack', () => {
+    seedInterval('water', 7200);
+    cmd('skip', 'water');
+    assert.ok(!has(hook('10:00'), 'water'));
+    assert.ok(!fs.existsSync(path.join(tmp, 'nudge-acks'))); // intervals don't use the daily ack store
+  });
 });
 
 describe('first-run seeding', () => {
@@ -146,9 +172,9 @@ describe('always-active scheduled (no time)', () => {
   it('fires at any time and can be acknowledged', () => {
     const conf = path.join(tmp, 'always.yaml');
     fs.writeFileSync(conf, '- id: setup\n  kind: scheduled\n  message: "Do the setup."\n');
-    assert.ok(run({ NUDGE_NOW: '03:17', NUDGE_CONF: conf }).includes('• setup '));
+    assert.ok(run({ NUDGE_NOW: '03:17', NUDGE_CONF: conf }).includes('• setup:'));
     run({}, ['done', 'setup']);
-    assert.ok(!run({ NUDGE_NOW: '03:17', NUDGE_CONF: conf }).includes('• setup '));
+    assert.ok(!run({ NUDGE_NOW: '03:17', NUDGE_CONF: conf }).includes('• setup:'));
   });
 });
 
@@ -169,11 +195,11 @@ describe('ack/hook data-dir consistency (installed-plugin fix)', () => {
     const hookEnv = { ...base, CLAUDE_PLUGIN_DATA: dir, NUDGE_NOW: '12:30' };
 
     const ctx = fire(hookEnv);
-    assert.ok(ctx.includes('• lunch '));
+    assert.ok(ctx.includes('• lunch:'));
     assert.ok(ctx.includes('--data ' + dir));               // emitted command pins the dir
     // agent runs the ack WITHOUT CLAUDE_PLUGIN_DATA, relying on the baked-in --data
     execFileSync('node', [NJ, '--data', dir, 'done', 'lunch'], { encoding: 'utf8', env: base });
-    assert.ok(!fire(hookEnv).includes('• lunch '));         // cleared — both resolved `dir`
+    assert.ok(!fire(hookEnv).includes('• lunch:'));         // cleared — both resolved `dir`
   });
 });
 

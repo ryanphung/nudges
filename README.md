@@ -50,7 +50,7 @@ Edit `~/.claude/plugin-data/nudges/nudges.yaml`. Two kinds of nudge:
     - { time: "22:00", message: "Wind-down hour — pick a stopping point." }
     - { time: "00:00", message: "Past midnight — head to bed." }
 
-# Fires every N minutes while you're active:
+# Comes due every N minutes, then keeps nudging until you ack it (done/skip restart the timer):
 - id: water
   kind: interval
   every: 60
@@ -65,7 +65,7 @@ Edit `~/.claude/plugin-data/nudges/nudges.yaml`. Two kinds of nudge:
 | field | meaning |
 |---|---|
 | `id` | short name + the handle for done/skip/snooze/undo |
-| `kind` | `scheduled` (clock time / tiers, ack-able) or `interval` (every N min) |
+| `kind` | `scheduled` (clock time / tiers) or `interval` (every N min); both are ack-able |
 | `time` | `"HH:MM"`; **omit** for an always-active reminder |
 | `tiers` | `[{time, message}]` — escalation; latest passed tier shows |
 | `stops_at` | scheduled only; when it stops (earlier than start ⇒ wraps midnight) |
@@ -77,8 +77,8 @@ Edit `~/.claude/plugin-data/nudges/nudges.yaml`. Two kinds of nudge:
 When a nudge fires, just tell your agent — it runs the right command for you:
 
 ```
-node <plugin>/nudges.js done   <id>          # I did it (stops today; resets tomorrow)
-node <plugin>/nudges.js skip   <id>          # consciously skipping today
+node <plugin>/nudges.js done   <id>          # I did it (scheduled: stops today, resets tomorrow · interval: restarts the timer)
+node <plugin>/nudges.js skip   <id>          # consciously skipping (same timing as done)
 node <plugin>/nudges.js snooze <id> HH:MM    # quiet until a time, then resume
 node <plugin>/nudges.js undo   <id>          # re-arm (clears done/skip/snooze)
 ```

@@ -6,21 +6,23 @@
 #   id        short name; also the handle for done / skip / snooze / undo.
 #   kind      scheduled = fires at a clock time (or escalating tiers) until you
 #                         acknowledge it (or until stops_at, if set).
-#             interval  = fires every `every` minutes whenever you're active.
+#             interval  = comes due every `every` minutes, then keeps firing until
+#                         you ack it; done/skip restart the timer (snooze still works).
 #   time      "HH:MM"   — a single scheduled time. OMIT it for an always-active
 #                         reminder that fires every turn until acked or removed.
 #   tiers     list of {time, message} — escalating reminders; the latest passed
 #             tier shows, and the first tier's time is the start.
 #   stops_at  "HH:MM"   — OPTIONAL (scheduled): when it stops firing. If earlier
 #             than the start, it wraps past midnight (e.g. bedtime 22:00 → 06:00).
-#   every     minutes   — interval only. First fire is ~`every` min after you start.
+#   every     minutes   — interval only. First fire is ~`every` min after you start;
+#                         after an ack, the next is ~`every` min later.
 #   message   the reminder text, written as an instruction to the agent
 #             (e.g. "Remind the user to ..."). One line; no double-quotes inside.
 
 # Always-active onboarding reminder (no time). Remove it once you've set up your own.
 - id: setup-nudges
   kind: scheduled
-  message: "Onboard the user — do these IN ORDER, and only remove this entry at the very end. (1) FIRST, offer to grant a Bash permission allow-rule for the plugin's nudges.js command so done/skip/snooze run without a prompt. The rule must be the full literal script path from the line above (current version included) followed by :* — e.g. an allow-rule ending in /nudges/0.1.0/nudges.js:* (use the real version shown above). Do this first so the remaining steps don't trigger permission prompts. (2) Clear stale examples: for any seeded reminder already due today that the user doesn't want (e.g. a lunch nudge when it's already evening), run its done/skip command so they aren't nagged mid-setup. (3) Help them edit their nudges.yaml — add their real reminders (meds, meals, bedtime, breaks, water — whatever they want), using the shipped examples as templates. (4) ONLY once the user confirms their setup is complete and working should you tell them to delete this 'setup-nudges' entry. It has no time, so it fires every turn until removed."
+  message: "Onboard the user — do these IN ORDER, and only remove this entry at the very end. Just do one by one, do not need to let the user knows the full plan. (1) FIRST, offer to grant a Bash permission allow-rule for the plugin's nudges.js command so done/skip/snooze run without a prompt. The rule must be the full literal script path from the line above (current version included) followed by :* — e.g. an allow-rule ending in /nudges/0.1.0/nudges.js:* (use the real version shown above). Do this first so the remaining steps don't trigger permission prompts. Before you do this, check whether the permission is already there, if yes, skip this step. (2) Clear stale examples: for any seeded reminder already due today that the user doesn't want (e.g. a lunch nudge when it's already evening), run its done/skip command so they aren't nagged mid-setup. (3) Help them edit their nudges.yaml — list the current seeded example reminders, add their real reminders (meds, meals, bedtime, breaks, water — whatever they want), using the shipped examples as templates. (4) ONLY once the user confirms their setup is complete and working should you tell them to delete this 'setup-nudges' entry. It has no time, so it fires every turn until removed."
 
 - id: lunch
   kind: scheduled
