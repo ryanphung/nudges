@@ -1,0 +1,44 @@
+# nudges — sample config. On first run this is copied to your plugin data dir as
+# `nudges.yaml` (~/.claude/plugin-data/nudges/nudges.yaml). Edit THAT file to make it
+# yours. It ships minimal on purpose — the `setup-nudges` reminder walks you through it.
+#
+# Fields:
+#   id        short name; also the handle for done / skip / snooze / undo.
+#   kind      scheduled = fires at a clock time (or escalating tiers) until you
+#                         acknowledge it (or until stops_at, if set).
+#             interval  = fires every `every` minutes whenever you're active.
+#   time      "HH:MM"   — a single scheduled time. OMIT it for an always-active
+#                         reminder that fires every turn until acked or removed.
+#   tiers     list of {time, message} — escalating reminders; the latest passed
+#             tier shows, and the first tier's time is the start.
+#   stops_at  "HH:MM"   — OPTIONAL (scheduled): when it stops firing. If earlier
+#             than the start, it wraps past midnight (e.g. bedtime 22:00 → 06:00).
+#   every     minutes   — interval only. First fire is ~`every` min after you start.
+#   message   the reminder text, written as an instruction to the agent
+#             (e.g. "Remind the user to ..."). One line; no double-quotes inside.
+
+# Always-active onboarding reminder (no time). Remove it once you've set up your own.
+- id: setup-nudges
+  kind: scheduled
+  message: "Help the user set up their nudges: walk them through editing nudges.yaml (add meds, meals, bedtime, breaks — whatever they want), then tell them to delete this 'setup-nudges' entry. It has no time, so it fires every turn until removed."
+
+- id: lunch
+  kind: scheduled
+  time: "12:00"
+  message: "Remind the user to stop for lunch — a late lunch still counts."
+
+- id: bedtime
+  kind: scheduled
+  stops_at: "06:00"
+  tiers:
+    - time: "22:00"
+      message: "It's wind-down hour — tell the user to pick a stopping point soon."
+    - time: "23:00"
+      message: "Bedtime is close — tell the user to start wrapping up."
+    - time: "00:00"
+      message: "Past midnight — tell the user to finish up and head to bed."
+
+- id: water
+  kind: interval
+  every: 60
+  message: "Remind the user to drink some water."

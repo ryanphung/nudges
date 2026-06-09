@@ -1,0 +1,15 @@
+{
+  "name": "nudges",
+  "version": "0.1.0",
+  "description": "Scheduled nudges for your AI agent — time-based reminders injected into context every turn.",
+  "bin": { "nudges": "./nudges.js" },
+  "scripts": {
+    "test": "node --test",
+    "coverage": "node --test --experimental-test-coverage"
+  },
+  "dependencies": {
+    "js-yaml": "^4.1.0"
+  },
+  "license": "MIT",
+  "repository": { "type": "git", "url": "git+https://github.com/ryanphung/nudges.git" }
+}

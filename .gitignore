@@ -1,0 +1,11 @@
+node_modules/
+
+# Personal config + runtime state live in the plugin data dir, never in the repo.
+# Ignored here too as a guard against a stray local copy during development.
+# Root-anchored so it does NOT match test/fixtures/nudges.yaml.
+/nudges.yaml
+/state/
+/nudge-acks
+/nudge-snoozes
+/nudge-intervals
+*.tmp

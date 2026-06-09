@@ -1,0 +1,49 @@
+# Test fixture for nudges.test.js — a STABLE config the suite pins against.
+# Independent of any personal config, so changing the example never breaks tests.
+# Change this only together with the assertions in nudges.test.js.
+
+- id: morning-meds
+  kind: scheduled
+  time: "09:00"
+  message: "Take morning medicine."
+
+- id: lunch
+  kind: scheduled
+  time: "12:00"
+  message: "Go and have lunch — a late lunch still counts."
+
+- id: pickup
+  kind: scheduled
+  tiers:
+    - time: "16:30"
+      message: "Wrap up — you should LEAVE by 18:30 to make it in time."
+    - time: "18:30"
+      message: "It is PAST the 18:30 leave-by time — go now."
+
+- id: evening-meds
+  kind: scheduled
+  time: "22:00"
+  message: "Take evening medicine."
+
+- id: bedtime
+  kind: scheduled
+  stops_at: "06:00"
+  tiers:
+    - time: "22:00"
+      message: "It's wind-down hour — start heading toward bed."
+    - time: "23:00"
+      message: "Midnight target is close — wrap up."
+    - time: "00:00"
+      message: "Past midnight — land the plane."
+    - time: "01:00"
+      message: "It's PAST the 1am hard limit — stop now."
+
+- id: water
+  kind: interval
+  every: 60
+  message: "Drink some water."
+
+- id: stretch
+  kind: interval
+  every: 90
+  message: "Stand up and stretch."
