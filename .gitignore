@@ -1,5 +1,8 @@
 node_modules/
 
+# Local session handover note — not part of the published plugin.
+/HANDOVER.md
+
 # Personal config + runtime state live in the plugin data dir, never in the repo.
 # Ignored here too as a guard against a stray local copy during development.
 # Root-anchored so it does NOT match test/fixtures/nudges.yaml.
