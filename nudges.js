@@ -43,12 +43,12 @@ const nowEpoch = () => Math.floor(Date.now() / 1000);
 
 // ---- first-run: seed the user's config from the shipped example ----
 function ensureConfig() {
-  if (fs.existsSync(CONF)) return true;
+  if (fs.existsSync(CONF)) return 'exists';
   try {
     fs.mkdirSync(path.dirname(CONF), { recursive: true });
     fs.copyFileSync(EXAMPLE, CONF);
     process.stderr.write(`nudges: created ${CONF} from the example — edit it to set up your reminders.\n`);
-    return true;
+    return 'created';
   } catch (e) {
     process.stderr.write(`nudges: could not create config at ${CONF}: ${e.message}\n`);
     return false;
@@ -99,7 +99,8 @@ function runHook() {
   let yaml;
   try { yaml = require('js-yaml'); }
   catch { process.stderr.write(`nudges: js-yaml not installed — run \`npm install\` in ${__dirname}\n`); return; }
-  if (!ensureConfig()) return;
+  const seeded = ensureConfig();
+  if (!seeded) return;
 
   let conf;
   try { conf = yaml.load(fs.readFileSync(CONF, 'utf8')); }
@@ -139,8 +140,11 @@ function runHook() {
     `[NUDGES · now ${hm}] Relay each reminder below to the user. ` +
     `Each repeats every message until handled. When they confirm they ACTUALLY did it ` +
     `(not just say they will), clear it: ${SELF} done <id>  (also: skip <id>, snooze <id> HH:MM).`;
+  const firstRun = seeded === 'created'
+    ? `\n(First run — your nudges config was just created at ${CONF}. Tell the user that's the file to edit to customize these reminders.)`
+    : '';
   const lines = fired.map((f) => `• ${f.n.id} ${actionsFor(f.n)}: ${f.body}`);
-  const ctx = preamble + '\n' + lines.join('\n');
+  const ctx = preamble + firstRun + '\n' + lines.join('\n');
 
   process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName: 'UserPromptSubmit', additionalContext: ctx } }) + '\n');
 }

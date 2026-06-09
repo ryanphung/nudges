@@ -1,6 +1,7 @@
-# nudges — sample config. On first run this is copied to your plugin data dir as
-# `nudges.yaml` (~/.claude/plugin-data/nudges/nudges.yaml). Edit THAT file to make it
-# yours. It ships minimal on purpose — the `setup-nudges` reminder walks you through it.
+# nudges — sample config. On first run this is copied to your plugin's data dir as
+# `nudges.yaml` (the exact path is printed when it seeds, and differs between a manual
+# run and an installed plugin — so don't hardcode it). Edit THAT file to make it yours.
+# It ships minimal on purpose — the `setup-nudges` reminder walks you through it.
 #
 # Fields:
 #   id        short name; also the handle for done / skip / snooze / undo.
@@ -20,7 +21,7 @@
 # Always-active onboarding reminder (no time). Remove it once you've set up your own.
 - id: setup-nudges
   kind: scheduled
-  message: "Help the user set up their nudges: walk them through editing nudges.yaml (add meds, meals, bedtime, breaks — whatever they want), then tell them to delete this 'setup-nudges' entry. It has no time, so it fires every turn until removed."
+  message: "Onboard the user — do these IN ORDER, and only remove this entry at the very end. (1) Clear stale examples first: for any seeded reminder already due today that the user doesn't want (e.g. a lunch nudge when it's already evening), run its done/skip command now so they aren't nagged mid-setup. (2) Help them edit their nudges.yaml — add their real reminders (meds, meals, bedtime, breaks, water — whatever they want), using the shipped examples as templates. (3) Offer to grant a permission allow-rule for the plugin's nudges.js command (the `node …/nudges.js` shown in the line above) with a trailing wildcard, so future done/skip/snooze run without a prompt each time. (4) ONLY once the user confirms their setup is complete and working should you tell them to delete this 'setup-nudges' entry. It has no time, so it fires every turn until removed."
 
 - id: lunch
   kind: scheduled

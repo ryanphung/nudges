@@ -132,9 +132,13 @@ describe('first-run seeding', () => {
   it('creates the config from the example when missing', () => {
     const conf = path.join(tmp, 'seeded.yaml');
     assert.ok(!fs.existsSync(conf));
-    run({ NUDGE_NOW: '10:00', NUDGE_CONF: conf }); // missing config -> seeds from nudges.example.yaml
+    const out = run({ NUDGE_NOW: '10:00', NUDGE_CONF: conf }); // missing config -> seeds from nudges.example.yaml
     assert.ok(fs.existsSync(conf));
     assert.match(fs.readFileSync(conf, 'utf8'), /kind:/);
+    // first run surfaces the resolved config path so the user knows what to edit
+    const ctx = JSON.parse(out).hookSpecificOutput.additionalContext;
+    assert.match(ctx, /First run/);
+    assert.ok(ctx.includes(conf));
   });
 });
 

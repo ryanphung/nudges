@@ -21,8 +21,13 @@ reminder reaches you exactly when you're at the keyboard, and never nags while y
 /plugin install nudges@nudges
 ```
 
-On first run it seeds a starter config at `~/.claude/plugin-data/nudges/nudges.yaml` and
-greets you with a `setup-nudges` reminder that walks you through making it yours.
+When prompted for scope, choose **"Install for you (user scope)"** so the nudges
+follow you across all projects. Then run `/reload-plugins` (or restart Claude Code)
+to activate it.
+
+On first run it seeds a starter config in the plugin's data dir (the exact path is
+printed when it seeds) and greets you with a `setup-nudges` reminder that walks you
+through making it yours.
 
 > Requires `node` on your PATH (used by the hook). Works on macOS, Linux, and Windows.
 
