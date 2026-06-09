@@ -17,7 +17,8 @@ reminder reaches you exactly when you're at the keyboard, and never nags while y
 ## Install
 
 ```
-/plugin install github:ryanphung/nudges
+/plugin marketplace add ryanphung/nudges
+/plugin install nudges@nudges
 ```
 
 On first run it seeds a starter config at `~/.claude/plugin-data/nudges/nudges.yaml` and

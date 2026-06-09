@@ -1,0 +1,12 @@
+{
+  "name": "nudges",
+  "owner": {
+    "name": "Ryan Phung"
+  },
+  "plugins": [
+    {
+      "name": "nudges",
+      "source": "."
+    }
+  ]
+}
